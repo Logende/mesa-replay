@@ -77,7 +77,7 @@ class CachableModel:
 
         elif self._cache_state is CacheState.WRITE:
             # store initial state of model in cache
-            self._write_cache_file()
+            self._step_write_to_cache()
 
     def _serialize_state(self) -> Any:
         """Serialize the model state.
