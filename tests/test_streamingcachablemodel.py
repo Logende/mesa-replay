@@ -1,9 +1,9 @@
-from mesa_replay.cachablemodel import (
-    Model,
-    CacheState
-)
+from mesa_replay.cachablemodel import Model, CacheState
 
-from mesa_replay.streamingcachablemodel import StreamingCachableModel, _stream_read_next_chunk_size
+from mesa_replay.streamingcachablemodel import (
+    StreamingCachableModel,
+    _stream_read_next_chunk_size,
+)
 
 import unittest
 from tempfile import TemporaryDirectory
@@ -37,7 +37,6 @@ class ModelFibonacciForReplay(ModelFibonacci):
 
 
 class TestCachableModel(unittest.TestCase):
-
     def test_streaming_chunk_handling(self):
         """This test verifies that the streaming functionality of 'StreamingCachableModel' works properly:
         for every step, first the size of the chunk (state) to persist is written to the stream. Next the actual

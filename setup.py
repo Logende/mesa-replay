@@ -7,12 +7,10 @@ from codecs import open
 # dill extends the pickle module by adding support also for lambdas and other special built-in Python types
 requires = ["mesa", "dill"]
 
-extras_require = {
-    "dev": ["flake8"]
-}
+extras_require = {"dev": ["flake8"]}
 
-# loading the version from the init file is taken over from mesa
-with open("mesareplay/__init__.py") as fd:
+# loading the version from the init file is taken over from mesa setup.py
+with open("mesa_replay/__init__.py") as fd:
     version = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', fd.read(), re.MULTILINE
     ).group(1)
@@ -21,12 +19,12 @@ with open("README.md", "rb", encoding="utf-8") as f:
     readme = f.read()
 
 setup(
-    name="Mesa-Replay",
+    name="mesa-replay",
     version=version,
     description="Enables caching simulations of mesa models, persisting them on the file system and replaying them "
-                "later.",
+    "later.",
     long_description=readme,
-    url="https://github.com/Logende/mesa_replay",
+    url="https://github.com/Logende/mesa-replay",
     packages=find_packages(),
     install_requires=requires,
     extras_require=extras_require,

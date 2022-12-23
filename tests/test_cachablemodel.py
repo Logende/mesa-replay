@@ -2,11 +2,7 @@ import gzip
 import lzma
 import dill
 
-from mesa_replay.cachablemodel import (
-    Model,
-    CachableModel,
-    CacheState
-)
+from mesa_replay.cachablemodel import Model, CachableModel, CacheState
 
 from unittest.mock import MagicMock
 import unittest

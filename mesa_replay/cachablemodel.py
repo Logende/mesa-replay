@@ -19,6 +19,7 @@ class CacheState(Enum):
     """When using 'WRITE', with every simulation step the actual simulation will be performed and the model state
     written to the cache (also called simulation mode).
     When using 'READ', with every step the model state will be read from the cache (also called replay mode)."""
+
     WRITE = (1,)
     READ = 2
 
@@ -112,20 +113,10 @@ class CachableModel:
         """
         self.cache = _read_cache_file(self.cache_file_path)
 
-    def run_model(self) -> None:
-        """Run the model until the end condition is reached."""
-        # self.model.run_model()
-        # Right now if someone has a custom run_model function, they need to overwrite this function too
-
-        while self.model.running:
-            self.step()
-
-        self.finish_run()
-
     def finish_run(self) -> None:
         """Tell the caching functionality that the run is finished and operations such as writing the cache
-        file can be performed. Automatically called by the 'run_model' function after the run, but needs to be
-        manually called, when calling the steps manually."""
+        file can be performed. Automatically called whenever after a step 'model.running' is false. Can also be manually
+        called to force writing the cache without the need of the model reaching the end condition."""
         if self.run_finished:
             print(
                 "CachableModel: tried to finish run that was already finished. Doing nothing."
@@ -155,6 +146,10 @@ class CachableModel:
 
         self.step_count = self.step_count + 1
 
+        # if through simulation or replay the model stopped running, let caching know about it
+        if not self.model.running:
+            self.finish_run()
+
     def _step_write_to_cache(self) -> None:
         """Is performed for every step, when 'cache_state' is 'WRITE'. Serializes the current state of the model and
         adds it to the cache (which is a list that contains the state for each performed step)."""
@@ -169,3 +164,11 @@ class CachableModel:
     def __getattr__(self, item):
         """Act as proxy: forward all attributes (including function calls) from actual model."""
         return self.model.__getattribute__(item)
+
+    def __setattr__(self, key, value):
+        """Act as proxy: forward all attribute writes (excluding CachableModel specific attributes) to actual model."""
+        if key in ("model", "cache_file_path", "_cache_state", "_cache_step_rate", "cache", "step_count",
+                   "run_finished"):
+            super().__setattr__(key, value)
+        else:
+            self.model.__setattr__(key, value)

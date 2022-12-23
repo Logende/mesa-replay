@@ -29,7 +29,7 @@ def _stream_read_next_chunk_size(stream):
 
 
 class StreamingCachableModel(CachableModel):
-    """Decorator for CachableModelOptimized that uses buffered streams for reading and writing the cache, instead
+    """Decorator for CachableModel that uses buffered streams for reading and writing the cache, instead
     of keeping the complete cache in memory. Useful when the cache is large."""
 
     def __init__(
