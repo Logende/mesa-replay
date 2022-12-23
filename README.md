@@ -51,6 +51,6 @@ To locally install Mesa-Replay as a pip module, use
 
 # How to Use
 
-TODO: show examples
+For usage examples, see [here](https://github.com/Logende/mesa-replay/tree/main/tests).
 
 The [test files](https://github.com/Logende/mesa-replay/tree/main/tests) (they have extensive descriptions) also illustrate the functionality of Mesa-Replay.
