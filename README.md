@@ -1,4 +1,4 @@
-# Mesa Replay
+# Mesa-Replay
 Enables caching simulations of mesa models, persisting them on the file system and replaying them later.
 
 ## What is Mesa?
@@ -29,11 +29,11 @@ being visualized in a browser window and analyzed in a Jupyter notebook*
 
 For more information and an example of how to use Mesa, see <https://mesa.readthedocs.io/en/main/overview.html>.
 
-## What is Mesa Replay?
+## What is Mesa-Replay?
 
 Depending on the complexity of a simulation model, the algorithms being used and the hardware, it can take many hours or even days for a simulation to run. Once a simulation run is finished and the application is closed, typically some chosen generated data is persisted, but everything else is gone. Unlike with a video, there is no way of going back within the simulation or replaying a simulation. You wrote an impressive COVID simulation that is quite accurate but takes over 10 hours to run? It is inconvenient for you to demonstrate or play your simulation live because it takes so much time?
 
-Mesa Replay addresses and solves those issues by enabling you to **cache your entire simulation run, persist the cached "run" on your file system and replay it later**.
+Mesa-Replay addresses and solves those issues by enabling you to **cache your entire simulation run, persist the cached "run" on your file system and replay it later**.
 
 **Use-cases**:
 
@@ -41,12 +41,12 @@ Mesa Replay addresses and solves those issues by enabling you to **cache your en
 - Let the simulation take its time but replay everything as fast as you want, making demonstrations easier
 - Even continue a previous simulation run that was stopped and persisted at some point
 
-Mesa Replay is developed with the goal of being **simple**, **generic** and **accessible**.
+Mesa-Replay is developed with the goal of being **simple**, **generic** and **accessible**.
 
-**Installation**:
+# Installation
 
 TODO
 
-**How to Use**:
+# How to Use
 
 TODO
