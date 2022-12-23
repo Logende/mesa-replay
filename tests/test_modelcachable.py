@@ -2,8 +2,13 @@ import gzip
 import lzma
 import dill
 
-from mesa.modelcachable import Model, ModelCachable, CacheState, ModelCachableStreaming, \
-    _stream_read_next_chunk_size
+from mesa_replay.modelcachable import (
+    Model,
+    CachableModel,
+    CacheState,
+    StreamingCachableModel,
+    _stream_read_next_chunk_size,
+)
 
 from unittest.mock import MagicMock
 import unittest
@@ -13,6 +18,7 @@ from pathlib import Path
 
 class ModelFibonacci(Model):
     """Simple fibonacci model to be used by the tests."""
+
     previous = 0
     current = 1
 
@@ -36,24 +42,24 @@ class ModelFibonacciForReplay(ModelFibonacci):
         raise Exception("This function is not supposed to be called during replay.")
 
 
-class ModelCachableCustomFileHandling(ModelCachable):
-    """ModelCachable with custom write and read implementation for the cache file. Uses a different compression
-    algorithm than the default ModelCachable, which should perform slower but result in stronger compression.
+class CachableModelCustomFileHandling(CachableModel):
+    """CachableModel with custom write and read implementation for the cache file. Uses a different compression
+    algorithm than the default CachableModel, which should perform slower but result in stronger compression.
     Used in a test to demonstrate the possibility of writing custom file handling."""
 
     def _write_cache_file(self) -> None:
         # overwrite to use different compression algorithm
-        with lzma.open(self.cache_file_path, 'wb') as file:
+        with lzma.open(self.cache_file_path, "wb") as file:
             dill.dump(self.cache, file)
 
     def _read_cache_file(self) -> None:
         # overwrite to use different compression algorithm
-        with lzma.open(self.cache_file_path, 'rb') as file:
+        with lzma.open(self.cache_file_path, "rb") as file:
             self.cache = dill.load(file)
 
 
-class ModelCachableCustomSerialization(ModelCachable):
-    """ModelCachable with custom state serialization and deserialization implementation for the cache.
+class CachableModelCustomSerialization(CachableModel):
+    """CachableModel with custom state serialization and deserialization implementation for the cache.
     Instead of storing the complete model instance state, it stores just the values necessary for replay.
     In case of ModelFibonacci, storing the 'current' value is enough for replay."""
 
@@ -69,43 +75,46 @@ class ModelCachableCustomSerialization(ModelCachable):
         self.model.current = state
 
 
-class TestModelCachable(unittest.TestCase):
-
+class TestCachableModel(unittest.TestCase):
     def test_model_attribute_access_over_wrapper(self):
-        """The actual simulation model is wrapped inside a ModelCachable instance.
-        The new model variable (which is of type ModelCachable and no longer of type ModelFibonacci) should
+        """The actual simulation model is wrapped inside a CachableModel instance.
+        The new model variable (which is of type CachableModel and no longer of type ModelFibonacci) should
         still behave the same way as the actual simulation model from outside. It should be possible to access the
-        attributes and functions of the underlying simulation model without knowing about the use of ModelCachable.
-        ModelCachable follows the decorator pattern: it adds functionality to the model, but from an outside perspective
+        attributes and functions of the underlying simulation model without knowing about the use of CachableModel.
+        CachableModel follows the decorator pattern: it adds functionality to the model, but from an outside perspective
         the object can be still accessed the same way as before."""
         model = ModelFibonacci()
-        model = ModelCachable(model, "irrelevant_cache_file_path", CacheState.WRITE)
+        model = CachableModel(model, "irrelevant_cache_file_path", CacheState.WRITE)
         assert model.running is True
         assert model.previous == 0
         assert model.custom_model_function() == 1
 
     def test_cache_read_fail_when_non_existing_file(self):
-        """When we instantiate a ModelCachable with 'CacheState.READ' it (within its constructor) tries to load
+        """When we instantiate a CachableModel with 'CacheState.READ' it (within its constructor) tries to load
         the cache from the given cache path. If the cache file does not exist or is not of the expected format, an
         exception is thrown."""
         model = ModelFibonacci()
 
-        # No exception when constructing ModelCachable with CacheState.WRITE because does not try to read cache
-        ModelCachable(model, "non_existing_file", CacheState.WRITE)
+        # No exception when constructing CachableModel with CacheState.WRITE because does not try to read cache
+        CachableModel(model, "non_existing_file", CacheState.WRITE)
 
-        # Exception when trying to construct ModelCachable with CacheState.READ and non-existing cache file
-        self.assertRaises(Exception, ModelCachable, model, "non_existing_file", CacheState.READ)
+        # Exception when trying to construct CachableModel with CacheState.READ and non-existing cache file
+        self.assertRaises(
+            Exception, CachableModel, model, "non_existing_file", CacheState.READ
+        )
 
-        # Exception when trying to construct ModelCachable with CacheState.READ and invalid cache file
+        # Exception when trying to construct CachableModel with CacheState.READ and invalid cache file
         with TemporaryDirectory() as tmp_dir_path:
             broken_cache_file_path = Path(tmp_dir_path).joinpath("broken_cache_file")
-            with open(broken_cache_file_path, 'w') as broken_cache_file:
+            with open(broken_cache_file_path, "w") as broken_cache_file:
                 broken_cache_file.write("invalid content")
-            self.assertRaises(Exception, ModelCachable, model, broken_cache_file_path, CacheState.READ)
+            self.assertRaises(
+                Exception, CachableModel, model, broken_cache_file_path, CacheState.READ
+            )
 
     def test_cache_file_creation(self):
-        """When a model is simulated and ModelCachable with 'CacheState.WRITE' is used, the simulation steps are
-        written to a cache. At the end of the simulation process (when 'ModelCachable.finish_run()' is called) the
+        """When a model is simulated and CachableModel with 'CacheState.WRITE' is used, the simulation steps are
+        written to a cache. At the end of the simulation process (when 'CachableModel.finish_run()' is called) the
          cache is persisted by writing to the given 'cache_file_path'."""
         with TemporaryDirectory() as tmp_dir_path:
             cache_file_path = Path(tmp_dir_path).joinpath("cache_file")
@@ -115,7 +124,9 @@ class TestModelCachable(unittest.TestCase):
 
             # Simulate
             model_simulate = ModelFibonacci()
-            model_simulate = ModelCachable(model_simulate, cache_file_path, CacheState.WRITE)
+            model_simulate = CachableModel(
+                model_simulate, cache_file_path, CacheState.WRITE
+            )
             for i in range(10):
                 model_simulate.step()
             model_simulate.finish_run()
@@ -123,8 +134,8 @@ class TestModelCachable(unittest.TestCase):
             # After finished run: cache file does exist
             assert cache_file_path.is_file()
 
-            # assert that file created by default ModelCachable can be opened using gzip and then dill
-            with gzip.open(cache_file_path, 'rb') as file:
+            # assert that file created by default CachableModel can be opened using gzip and then dill
+            with gzip.open(cache_file_path, "rb") as file:
                 dill.load(file)
 
     def test_compare_replay_with_simulation(self):
@@ -138,7 +149,9 @@ class TestModelCachable(unittest.TestCase):
 
             # Simulate
             model_simulate = ModelFibonacci()
-            model_simulate = ModelCachable(model_simulate, cache_file_path, CacheState.WRITE)
+            model_simulate = CachableModel(
+                model_simulate, cache_file_path, CacheState.WRITE
+            )
             for i in range(step_count):
                 model_simulate.step()
                 values_simulate.append(model_simulate.current)
@@ -146,7 +159,7 @@ class TestModelCachable(unittest.TestCase):
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = ModelCachable(model_replay, cache_file_path, CacheState.READ)
+            model_replay = CachableModel(model_replay, cache_file_path, CacheState.READ)
             for i in range(step_count):
                 model_replay.step()
                 values_replay.append(model_replay.current)
@@ -163,26 +176,30 @@ class TestModelCachable(unittest.TestCase):
 
             # Simulate
             model_simulate = ModelFibonacci()
-            model_simulate = ModelCachable(model_simulate, cache_file_path, CacheState.WRITE)
+            model_simulate = CachableModel(
+                model_simulate, cache_file_path, CacheState.WRITE
+            )
             for i in range(step_count):
                 model_simulate.step()
             model_simulate.finish_run()
 
             # Load from cache and check cache size
             model_replay = ModelFibonacciForReplay()
-            model_replay = ModelCachable(model_replay, cache_file_path, CacheState.READ)
+            model_replay = CachableModel(model_replay, cache_file_path, CacheState.READ)
             assert len(model_replay.cache) == step_count
 
     def test_automatic_save_after_run_finished(self):
-        """When using the 'ModelCachable.run_model()' function, the simulation will simulate steps until it reaches
-        'model.running=False'. When it reaches this end condition and stops running, the 'ModelCachable.finish_run()'
+        """When using the 'CachableModel.run_model()' function, the simulation will simulate steps until it reaches
+        'model.running=False'. When it reaches this end condition and stops running, the 'CachableModel.finish_run()'
         function should automatically be called to persist the cache."""
         with TemporaryDirectory() as tmp_dir_path:
             cache_file_path = Path(tmp_dir_path).joinpath("cache_file")
 
             model_simulate = ModelFibonacci()
-            model_simulate = ModelCachable(model_simulate, cache_file_path, CacheState.WRITE)
-            mock_function = MagicMock(name='finish_run')
+            model_simulate = CachableModel(
+                model_simulate, cache_file_path, CacheState.WRITE
+            )
+            mock_function = MagicMock(name="finish_run")
             model_simulate.finish_run = mock_function
 
             assert mock_function.call_count == 0
@@ -202,14 +219,16 @@ class TestModelCachable(unittest.TestCase):
 
             # Simulate
             model_simulate = ModelFibonacci()
-            model_simulate = ModelCachable(model_simulate, cache_file_path, CacheState.WRITE)
+            model_simulate = CachableModel(
+                model_simulate, cache_file_path, CacheState.WRITE
+            )
             model_simulate.run_model()
             final_value_simulation = model_simulate.current
             final_step_simulation = model_simulate.step_count
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = ModelCachable(model_replay, cache_file_path, CacheState.READ)
+            model_replay = CachableModel(model_replay, cache_file_path, CacheState.READ)
             model_replay.run_model()
             final_value_replay = model_simulate.current
             final_step_replay = model_replay.step_count
@@ -228,15 +247,21 @@ class TestModelCachable(unittest.TestCase):
 
                 # Simulate
                 model_simulate = ModelFibonacci()
-                model_simulate = ModelCachable(model_simulate, cache_file_path, CacheState.WRITE,
-                                               cache_step_rate=cache_step_rate)
+                model_simulate = CachableModel(
+                    model_simulate,
+                    cache_file_path,
+                    CacheState.WRITE,
+                    cache_step_rate=cache_step_rate,
+                )
                 for i in range(step_count):
                     model_simulate.step()
                 model_simulate.finish_run()
 
                 # Replay
                 model_replay = ModelFibonacciForReplay()
-                model_replay = ModelCachable(model_replay, cache_file_path, CacheState.READ)
+                model_replay = CachableModel(
+                    model_replay, cache_file_path, CacheState.READ
+                )
 
                 # The replay cache has only every precision-th step. E.g. precision is 2: only every second step.
                 # 100 steps, precision 1 -> 100 cache size
@@ -251,23 +276,25 @@ class TestModelCachable(unittest.TestCase):
                 assert model_replay.step_count == expected_replay_steps
 
     def test_custom_cache_file_handling(self):
-        """This test compares the cache file outputs from ModelCachable versus ModelCachableCustomFileHandling.
+        """This test compares the cache file outputs from CachableModel versus CachableModelCustomFileHandling.
         The latter implements custom file handling and uses a stronger compression. The resulting cache file should be
-        smaller than the one from the default ModelCachable.
+        smaller than the one from the default CachableModel.
         This test mainly serves as demonstration on how custom file handling could be implemented."""
         with TemporaryDirectory() as tmp_dir_path:
             cache_file_path_1 = Path(tmp_dir_path).joinpath("cache_file_1")
             cache_file_path_2 = Path(tmp_dir_path).joinpath("cache_file_2")
 
-            # Simulate with regular ModelCachable
+            # Simulate with regular CachableModel
             model_1 = ModelFibonacci()
-            model_1 = ModelCachable(model_1, cache_file_path_1, CacheState.WRITE)
+            model_1 = CachableModel(model_1, cache_file_path_1, CacheState.WRITE)
             model_1.run_model()
             final_value_1 = model_1.current
 
-            # Simulate with custom ModelCachable that uses stronger compression
+            # Simulate with custom CachableModel that uses stronger compression
             model_2 = ModelFibonacci()
-            model_2 = ModelCachableCustomFileHandling(model_2, cache_file_path_2, CacheState.WRITE)
+            model_2 = CachableModelCustomFileHandling(
+                model_2, cache_file_path_2, CacheState.WRITE
+            )
             model_2.run_model()
             final_value_2 = model_2.current
 
@@ -275,27 +302,32 @@ class TestModelCachable(unittest.TestCase):
             assert final_value_1 == final_value_2
 
             # Cache file 2 should be smaller than cache file 1 due to stronger compression
-            assert cache_file_path_2.stat().st_size * 1.1 < cache_file_path_1.stat().st_size
+            assert (
+                cache_file_path_2.stat().st_size * 1.1
+                < cache_file_path_1.stat().st_size
+            )
 
     def test_custom_serialization(self):
-        """This test compares the cache file outputs from ModelCachable versus ModelCachableCustomSerialization.
+        """This test compares the cache file outputs from CachableModel versus CachableModelCustomSerialization.
         The latter implements custom state serialization and deserialization. Instead of storing the complete model
         state, it stores only the 'current' value of the model in the cache. The resulting cache file should be
-        significantly smaller than the one from the default ModelCachable.
+        significantly smaller than the one from the default CachableModel.
         This test mainly serves as demonstration on how custom state serialization can be implemented."""
         with TemporaryDirectory() as tmp_dir_path:
             cache_file_path_1 = Path(tmp_dir_path).joinpath("cache_file_1")
             cache_file_path_2 = Path(tmp_dir_path).joinpath("cache_file_2")
 
-            # Simulate with regular ModelCachable
+            # Simulate with regular CachableModel
             model_1 = ModelFibonacci()
-            model_1 = ModelCachable(model_1, cache_file_path_1, CacheState.WRITE)
+            model_1 = CachableModel(model_1, cache_file_path_1, CacheState.WRITE)
             model_1.run_model()
             final_value_1 = model_1.current
 
-            # Simulate with custom ModelCachable that caches only parts of the model state that are required for replay
+            # Simulate with custom CachableModel that caches only parts of the model state that are required for replay
             model_2 = ModelFibonacci()
-            model_2 = ModelCachableCustomSerialization(model_2, cache_file_path_2, CacheState.WRITE)
+            model_2 = CachableModelCustomSerialization(
+                model_2, cache_file_path_2, CacheState.WRITE
+            )
             model_2.run_model()
             final_value_2 = model_2.current
 
@@ -303,10 +335,12 @@ class TestModelCachable(unittest.TestCase):
             assert final_value_1 == final_value_2
 
             # Cache file 2 should be a lot smaller than cache file 1 due to storing fewer data
-            assert cache_file_path_2.stat().st_size * 35 < cache_file_path_1.stat().st_size
+            assert (
+                cache_file_path_2.stat().st_size * 35 < cache_file_path_1.stat().st_size
+            )
 
-    def test_model_cachable_streaming_chunk_handling(self):
-        """This test verifies that the streaming functionality of 'ModelCachableStreaming' works properly:
+    def test_streaming_chunk_handling(self):
+        """This test verifies that the streaming functionality of 'StreamingCachableModel' works properly:
         for every step, first the size of the chunk (state) to persist is written to the stream. Next the actual
         chunk is written."""
         with TemporaryDirectory() as tmp_dir_path:
@@ -314,14 +348,18 @@ class TestModelCachable(unittest.TestCase):
 
             # Simulate
             model_simulate = ModelFibonacci()
-            model_simulate = ModelCachableStreaming(model_simulate, cache_file_path, CacheState.WRITE)
+            model_simulate = StreamingCachableModel(
+                model_simulate, cache_file_path, CacheState.WRITE
+            )
             model_simulate.step()
             model_simulate.finish_run()
             value_simulate = model_simulate.current
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = ModelCachableStreaming(model_replay, cache_file_path, CacheState.READ)
+            model_replay = StreamingCachableModel(
+                model_replay, cache_file_path, CacheState.READ
+            )
 
             # manually read from stream: 1. retrieve chunk length
             chunk_length = _stream_read_next_chunk_size(model_replay.cache_file_stream)
@@ -337,8 +375,8 @@ class TestModelCachable(unittest.TestCase):
             value_replay = model_replay.current
             assert value_replay == value_simulate
 
-    def test_model_cachable_streaming_results(self):
-        """This test uses ModelCachableStreaming. It runs a complete simulation, that is persisted using streaming.
+    def test_streaming_results(self):
+        """This test uses StreamingCachableModel. It runs a complete simulation, that is persisted using streaming.
         Next it replays the simulation using the cache and streaming. Finally, it asserts that the final value of the
         replay is the same as the final value of the simulation."""
         with TemporaryDirectory() as tmp_dir_path:
@@ -346,13 +384,17 @@ class TestModelCachable(unittest.TestCase):
 
             # Simulate
             model_simulate = ModelFibonacci()
-            model_simulate = ModelCachableStreaming(model_simulate, cache_file_path, CacheState.WRITE)
+            model_simulate = StreamingCachableModel(
+                model_simulate, cache_file_path, CacheState.WRITE
+            )
             model_simulate.run_model()
             value_simulate = model_simulate.current
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = ModelCachableStreaming(model_replay, cache_file_path, CacheState.READ)
+            model_replay = StreamingCachableModel(
+                model_replay, cache_file_path, CacheState.READ
+            )
             model_replay.run_model()
             value_replay = model_replay.current
 
