@@ -45,11 +45,11 @@ class CachableModel:
     """Class that takes a model and writes its steps to a cache file or reads them from a cache file."""
 
     def __init__(
-        self,
-        model: Model,
-        cache_file_path: str | Path,
-        cache_state: CacheState,
-        cache_step_rate: int = 1,
+            self,
+            model: Model,
+            cache_file_path: str | Path,
+            cache_state: CacheState,
+            cache_step_rate: int = 1,
     ) -> None:
         """Create a new caching wrapper around an existing mesa model instance.
 
@@ -70,12 +70,12 @@ class CachableModel:
         self.step_count: int = 0
         self.run_finished = False
 
-        if self._cache_state is CacheState.READ:
+        if cache_state is CacheState.READ:
             self._read_cache_file()
             # init the model at same state as cached model
             self._step_read_from_cache()
 
-        elif self._cache_state is CacheState.WRITE:
+        elif cache_state is CacheState.WRITE:
             # store initial state of model in cache
             self._step_write_to_cache()
 
@@ -119,6 +119,14 @@ class CachableModel:
         """
         self.cache = _read_cache_file(self.cache_file_path)
 
+    def run_model(self) -> None:
+        """Run the model until the end condition is reached."""
+        # Right now if someone has a custom run_model function, they need to overwrite this function too.
+        # That is because if they would use their own 'run_model()' function, they would access also their own 'step()'
+        # function and not the outer level CachableModel 'step()' function.
+        while self.model.running:
+            self.step()
+
     def finish_run(self) -> None:
         """Tell the caching functionality that the run is finished and operations such as writing the cache
         file can be performed. Automatically called whenever after a step 'model.running' is false. Can also be manually
@@ -137,10 +145,12 @@ class CachableModel:
 
     def step(self) -> None:
         """A single step."""
+        self.step_count = self.step_count + 1
+
         if self._cache_state is CacheState.WRITE:
             self.model.step()
             # Cache only every n-th step
-            if (self.step_count + 1) % self._cache_step_rate == 0:
+            if self.step_count % self._cache_step_rate == 0:
                 self._step_write_to_cache()
 
         elif self._cache_state is CacheState.READ:
@@ -158,30 +168,28 @@ class CachableModel:
         """Is performed for every step, when 'cache_state' is 'WRITE'. Serializes the current state of the model and
         adds it to the cache (which is a list that contains the state for each performed step)."""
         self.cache.append(self._serialize_state())
-        self.step_count = self.step_count + 1
 
     def _step_read_from_cache(self) -> None:
         """Is performed for every step, when 'cache_state' is 'READ'. Reads the next state from the cache, deserializes
         it and then updates the model state to this new state."""
         serialized_state = self.cache[self.step_count]
         self._deserialize_state(serialized_state)
-        self.step_count = self.step_count + 1
 
     def __getattr__(self, item):
         """Act as proxy: forward all attributes (including function calls) from actual model."""
         return self.model.__getattribute__(item)
 
-    def __setattr__(self, key, value):
-        """Act as proxy: forward all attribute writes (excluding CachableModel specific attributes) to actual model."""
-        if key in (
-            "model",
-            "cache_file_path",
-            "_cache_state",
-            "_cache_step_rate",
-            "cache",
-            "step_count",
-            "run_finished",
-        ):
-            super().__setattr__(key, value)
-        else:
-            self.model.__setattr__(key, value)
+    #def __setattr__(self, key, value):
+    #    """Act as proxy: forward all attribute writes (excluding CachableModel specific attributes) to actual model."""
+    #    if key in (
+    #            "model",
+    #            "cache_file_path",
+    #            "_cache_state",
+    #            "_cache_step_rate",
+    #            "cache",
+    #            "step_count",
+    #            "run_finished",
+    #    ):
+    #        super().__setattr__(key, value)
+    #    else:
+    #        self.model.__setattr__(key, value)

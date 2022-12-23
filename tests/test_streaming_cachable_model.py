@@ -1,6 +1,6 @@
-from mesa_replay.cachablemodel import Model, CacheState
+from mesa_replay.cachable_model import Model, CacheState
 
-from mesa_replay.streamingcachablemodel import (
+from mesa_replay.streaming_cachable_model import (
     StreamingCachableModel,
     _stream_read_next_chunk_size,
 )

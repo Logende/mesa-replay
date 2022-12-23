@@ -10,7 +10,7 @@ import io
 from pathlib import Path
 from typing import IO
 
-from mesa_replay.cachablemodel import Model, CachableModel, CacheState
+from mesa_replay.cachable_model import Model, CachableModel, CacheState
 
 
 def _stream_write_next_chunk_size(stream: IO, size: int):
@@ -39,13 +39,12 @@ class StreamingCachableModel(CachableModel):
         cache_state: CacheState,
         cache_step_rate: int = 1,
     ):
-        super().__init__(model, cache_file_path, cache_state, cache_step_rate)
 
         if cache_state is CacheState.WRITE:
-            if self.cache_file_path.exists():
+            if cache_file_path.exists():
                 print(
                     "CachableModelLarge: cache file (path='"
-                    + str(self.cache_file_path)
+                    + str(cache_file_path)
                     + "') already exists. "
                     "Deleting it."
                 )
@@ -54,6 +53,9 @@ class StreamingCachableModel(CachableModel):
 
         elif cache_state is CacheState.READ:
             self.cache_file_stream = io.open(cache_file_path, "rb")
+
+        # needs to be called when the file stream is already open
+        super().__init__(model, cache_file_path, cache_state, cache_step_rate)
 
     def finish_run(self) -> None:
         """Tell the caching functionality that the run is finished and operations such as writing the cache
@@ -93,3 +95,4 @@ class StreamingCachableModel(CachableModel):
         """Overwrites the '_read_cache_file' function of the CachableModel class. As the file content is read from
         the stream during each step, this function does not have to do anything in advance."""
         return
+

@@ -2,9 +2,8 @@ import gzip
 import lzma
 import dill
 
-from mesa_replay.cachablemodel import Model, CachableModel, CacheState
+from mesa_replay.cachable_model import Model, CachableModel, CacheState
 
-from unittest.mock import MagicMock
 import unittest
 from tempfile import TemporaryDirectory
 from pathlib import Path
@@ -177,12 +176,14 @@ class TestCachableModel(unittest.TestCase):
                 model_simulate.step()
             model_simulate.finish_run()
 
-            # Load from cache and check cache size
+            # Load from cache
             model_replay = ModelFibonacciForReplay()
             model_replay = CachableModel(model_replay, cache_file_path, CacheState.READ)
-            assert len(model_replay.cache) == step_count
 
-    def test_automatic_save_after_run_finished(self):
+            # expect that cache is 1 bigger than step count because it includes the initial state (before any step) too
+            assert len(model_replay.cache) == step_count + 1
+
+    def test_automatic_detection_of_run_finish(self):
         """When using the 'CachableModel.run_model()' function, the simulation will simulate steps until it reaches
         'model.running=False'. When it reaches this end condition and stops running, the 'CachableModel.finish_run()'
         function should automatically be called to persist the cache."""
@@ -193,14 +194,12 @@ class TestCachableModel(unittest.TestCase):
             model_simulate = CachableModel(
                 model_simulate, cache_file_path, CacheState.WRITE
             )
-            mock_function = MagicMock(name="finish_run")
-            model_simulate.finish_run = mock_function
 
-            assert mock_function.call_count == 0
+            assert not model_simulate.run_finished
 
             model_simulate.run_model()
 
-            assert mock_function.call_count == 1
+            assert model_simulate.run_finished
 
     def test_replay_finish_identical_to_simulation_finish(self):
         """This test lets the simulation run until it reaches 'running=False'. Then the cache is automatically
@@ -257,14 +256,14 @@ class TestCachableModel(unittest.TestCase):
                     model_replay, cache_file_path, CacheState.READ
                 )
 
-                # The replay cache has only every precision-th step. E.g. precision is 2: only every second step.
-                # 100 steps, precision 1 -> 100 cache size
-                # 100 steps, precision 2 -> 50 cache size
-                # 100 steps, precision 3 -> 33 cache size
-                # 100 steps, precision 8 -> 12 cache size
+                # The replay cache stores only every n-th step. E.g. cache_step_rate is 2: only every second step.
+                # 100 steps, cache_step_rate 1 -> 100 steps cached
+                # 100 steps, cache_step_rate 2 -> 50 steps cached
+                # 100 steps, cache_step_rate 3 -> 33 steps cached
+                # 100 steps, cache_step_rate 8 -> 12 steps cached
                 expected_replay_steps = step_count // cache_step_rate
 
-                assert len(model_replay.cache) == expected_replay_steps
+                assert len(model_replay.cache) == expected_replay_steps + 1
 
                 model_replay.run_model()
                 assert model_replay.step_count == expected_replay_steps
