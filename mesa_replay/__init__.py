@@ -4,7 +4,8 @@ Core Objects: CachableModel, CachableModelStreaming
 """
 import datetime
 
-from mesa_replay.modelcachable import CachableModel, StreamingCachableModel, CacheState
+from mesa_replay.cachablemodel import CachableModel, CacheState
+from mesa_replay.streamingcachablemodel import StreamingCachableModel
 
 __all__ = ["CachableModel", "StreamingCachableModel", "CacheState"]
 

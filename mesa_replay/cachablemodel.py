@@ -1,22 +1,24 @@
 """
 A decorator that wraps the model class of mesa and extends it by caching functionality.
 
-Core Objects: CachableModel, StreamingCachableModel
+Core Objects: CachableModel
 """
-
-import os
-import io
 from pathlib import Path
 from enum import Enum
-from typing import Any, IO
+from typing import Any
 
 import dill
 import gzip
+
+from mesa_replay.model_state_stripper import strip_off_unneeded_data_from_model_dict
 
 from mesa import Model
 
 
 class CacheState(Enum):
+    """When using 'WRITE', with every simulation step the actual simulation will be performed and the model state
+    written to the cache (also called simulation mode).
+    When using 'READ', with every step the model state will be read from the cache (also called replay mode)."""
     WRITE = (1,)
     READ = 2
 
@@ -36,53 +38,6 @@ def _read_cache_file(cache_file_path: Path) -> list[Any]:
     Expects that gzip and dill have been used to write the file."""
     with gzip.open(cache_file_path, "rb") as file:
         return dill.load(file)
-
-
-def _stream_write_next_chunk_size(stream: IO, size: int):
-    """The StreamingCachableModel functionality writes each step into the cache file stream as a separate 'chunk'.
-    To enable the stream reading functionality to know how big the next data chunk of the stream is, before every chunk
-    the chunk size is written into the stream. This function writes the chunk size into the given stream."""
-    chunk_length_bytes = size.to_bytes(length=8, byteorder="little", signed=False)
-    stream.write(chunk_length_bytes)
-
-
-def _stream_read_next_chunk_size(stream):
-    """The StreamingCachableModel functionality writes each step into the cache file stream as a separate 'chunk'.
-    To enable the stream reading functionality to know how big the next data chunk of the stream is, before every chunk
-    the chunk size is written into the stream. This function reads the next chunk size from the stream."""
-    return int.from_bytes(stream.read(8), byteorder="little", signed=False)
-
-
-def _strip_off_unneeded_data_from_model_dict(original_model_dict: dict):
-    """If not overwritten by custom serialization, CachableModel persists the complete 'model.__dict__' for every step.
-    Not everything that the model dict contains needs to be cached. As most model properties are model-specific, the
-    decision of what to store and what not to store is up to the person developing the model, which they can do by
-    overwriting the 'CachableModel._serialize_state' function. Some generic optimization, however, can be made:
-    Many mesa models use the mesa scheduling and/or the mesa datacollector functionality. The scheduler does not need to
-    be cached, therefore, we can remove it. The datacollector stores not only data from the current, but also from the
-    previous steps. This we can change, by deleting all data from the previous steps. That is exactly what this function
-    does. The original dict of the model is taken as input, copied and then unneeded data is removed from the copy. This
-    stripped copy is then returned."""
-    dict_copy = dill.copy(original_model_dict)
-    dict_copy["schedule"] = None
-    if "datacollector" in dict_copy:
-        data_collector = dict_copy["datacollector"]
-
-        model_vars: dict = data_collector.model_vars
-        for key in model_vars.keys():
-            values_list: list = model_vars[key]
-            latest_value = values_list[len(values_list) - 1]
-            model_vars[key] = [latest_value]
-
-        agent_records: dict = data_collector._agent_records
-        if not len(agent_records) == 0:
-            latest_agent_record_key = len(agent_records) - 1
-            latest_agent_record_value = agent_records[latest_agent_record_key]
-            data_collector._agent_records = {
-                latest_agent_record_key: latest_agent_record_value
-            }
-
-    return dict_copy
 
 
 class CachableModel:
@@ -130,7 +85,7 @@ class CachableModel:
         way, for example, reading the cache from the file stream step by step remains possible, without having to
         load the complete cache into memory. This is not possible, when the complete output file is compressed.
         """
-        stripped_dict_model = _strip_off_unneeded_data_from_model_dict(
+        stripped_dict_model = strip_off_unneeded_data_from_model_dict(
             self.model.__dict__
         )
         return dill.dumps(stripped_dict_model)
@@ -214,70 +169,3 @@ class CachableModel:
     def __getattr__(self, item):
         """Act as proxy: forward all attributes (including function calls) from actual model."""
         return self.model.__getattribute__(item)
-
-
-class StreamingCachableModel(CachableModel):
-    """Decorator for CachableModelOptimized that uses buffered streams for reading and writing the cache, instead
-    of keeping the complete cache in memory. Useful when the cache is large."""
-
-    def __init__(
-        self,
-        model: Model,
-        cache_file_path: str | Path,
-        cache_state: CacheState,
-        cache_step_rate: int = 1,
-    ):
-        super().__init__(model, cache_file_path, cache_state, cache_step_rate)
-
-        if cache_state is CacheState.WRITE:
-            if self.cache_file_path.exists():
-                print(
-                    "CachableModelLarge: cache file (path='"
-                    + str(self.cache_file_path)
-                    + "') already exists. "
-                    "Deleting it."
-                )
-                os.remove(cache_file_path)
-            self.cache_file_stream = io.open(cache_file_path, "wb")
-
-        elif cache_state is CacheState.READ:
-            self.cache_file_stream = io.open(cache_file_path, "rb")
-
-    def finish_run(self) -> None:
-        """Tell the caching functionality that the run is finished and operations such as writing the cache
-        file can be performed. Automatically called by the 'run_model' function after the run, but needs to be
-        manually called, when calling the steps manually."""
-        super().finish_run()
-        self.cache_file_stream.close()
-
-    def _step_write_to_cache(self) -> None:
-        """Is performed for every step, when 'cache_state' is 'WRITE'. Serializes the current state of the model and
-        writes it to the cache file stream."""
-        serialized_state: bytes = self._serialize_state()
-        _stream_write_next_chunk_size(self.cache_file_stream, len(serialized_state))
-        self.cache_file_stream.write(serialized_state)
-
-    def _step_read_from_cache(self) -> None:
-        """Is performed for every step, when 'cache_state' is 'READ'. Reads the next state from the cache file stream,
-        deserializes it and then updates the model state to this new state."""
-        chunk_length = _stream_read_next_chunk_size(self.cache_file_stream)
-        if chunk_length == 0:
-            print("CachableModelLarge: reached end of cache file stream.")
-            self.model.running = False
-        else:
-            serialized_state = self.cache_file_stream.read(chunk_length)
-            self._deserialize_state(serialized_state)
-
-    def _write_cache_file(self) -> None:
-        """Overwrites the '_write_cache_file' function of the CachableModel class. As the file content is written
-        to the stream during each step, this function does not have to write the complete cache file.
-        It only adds an EOF hint to the cache file stream. After that, the stream can be closed and the cache file is
-        completed.
-        """
-        # end cache file with a chunk size of 0, to make EOF detectable
-        _stream_write_next_chunk_size(self.cache_file_stream, 0)
-
-    def _read_cache_file(self) -> None:
-        """Overwrites the '_read_cache_file' function of the CachableModel class. As the file content is read from
-        the stream during each step, this function does not have to do anything in advance."""
-        return
