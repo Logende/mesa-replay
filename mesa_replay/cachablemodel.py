@@ -72,6 +72,12 @@ class CachableModel:
 
         if self._cache_state is CacheState.READ:
             self._read_cache_file()
+            # init the model at same state as cached model
+            self._step_read_from_cache()
+
+        elif self._cache_state is CacheState.WRITE:
+            # store initial state of model in cache
+            self._write_cache_file()
 
     def _serialize_state(self) -> Any:
         """Serialize the model state.
@@ -144,8 +150,6 @@ class CachableModel:
             if self.step_count == len(self.cache) - 1:
                 self.model.running = False
 
-        self.step_count = self.step_count + 1
-
         # if through simulation or replay the model stopped running, let caching know about it
         if not self.model.running:
             self.finish_run()
@@ -154,12 +158,14 @@ class CachableModel:
         """Is performed for every step, when 'cache_state' is 'WRITE'. Serializes the current state of the model and
         adds it to the cache (which is a list that contains the state for each performed step)."""
         self.cache.append(self._serialize_state())
+        self.step_count = self.step_count + 1
 
     def _step_read_from_cache(self) -> None:
         """Is performed for every step, when 'cache_state' is 'READ'. Reads the next state from the cache, deserializes
         it and then updates the model state to this new state."""
         serialized_state = self.cache[self.step_count]
         self._deserialize_state(serialized_state)
+        self.step_count = self.step_count + 1
 
     def __getattr__(self, item):
         """Act as proxy: forward all attributes (including function calls) from actual model."""
