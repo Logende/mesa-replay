@@ -1,6 +1,11 @@
 import mesa
 
-from examples.replay_schelling.server import canvas_element, get_happy_agents, happy_chart, model_params
+from examples.replay_schelling.server import (
+    canvas_element,
+    get_happy_agents,
+    happy_chart,
+    model_params,
+)
 from cachablemodel import CachableSchelling
 
 # As 'replay' is a simulation model parameter in this example, we need to make it available here

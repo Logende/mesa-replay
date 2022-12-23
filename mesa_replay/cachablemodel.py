@@ -173,8 +173,15 @@ class CachableModel:
 
     def __setattr__(self, key, value):
         """Act as proxy: forward all attribute writes (excluding CachableModel specific attributes) to actual model."""
-        if key in ("model", "cache_file_path", "_cache_state", "_cache_step_rate", "cache", "step_count",
-                   "run_finished"):
+        if key in (
+            "model",
+            "cache_file_path",
+            "_cache_state",
+            "_cache_step_rate",
+            "cache",
+            "step_count",
+            "run_finished",
+        ):
             super().__setattr__(key, value)
         else:
             self.model.__setattr__(key, value)
