@@ -17,7 +17,7 @@ class CachableSchelling(CachableModel):
         replay=False,
     ):
         actual_model = Schelling(width, height, density, minority_pc, homophily)
-        cache_state = CacheState.READ if replay else CacheState.WRITE
+        cache_state = CacheState.REPLAY if replay else CacheState.RECORD
         super().__init__(
             actual_model,
             cache_file_path="my_cache_file_path.cache",

@@ -77,36 +77,36 @@ class TestCachableModel(unittest.TestCase):
         CachableModel follows the decorator pattern: it adds functionality to the model, but from an outside perspective
         the object can be still accessed the same way as before."""
         model = ModelFibonacci()
-        model = CachableModel(model, "irrelevant_cache_file_path", CacheState.WRITE)
+        model = CachableModel(model, "irrelevant_cache_file_path", CacheState.RECORD)
         assert model.running is True
         assert model.previous == 0
         assert model.custom_model_function() == 1
 
     def test_cache_read_fail_when_non_existing_file(self):
-        """When we instantiate a CachableModel with 'CacheState.READ' it (within its constructor) tries to load
+        """When we instantiate a CachableModel with 'CacheState.REPLAY' it (within its constructor) tries to load
         the cache from the given cache path. If the cache file does not exist or is not of the expected format, an
         exception is thrown."""
         model = ModelFibonacci()
 
-        # No exception when constructing CachableModel with CacheState.WRITE because does not try to read cache
-        CachableModel(model, "non_existing_file", CacheState.WRITE)
+        # No exception when constructing CachableModel with CacheState.RECORD because does not try to read cache
+        CachableModel(model, "non_existing_file", CacheState.RECORD)
 
-        # Exception when trying to construct CachableModel with CacheState.READ and non-existing cache file
+        # Exception when trying to construct CachableModel with CacheState.REPLAY and non-existing cache file
         self.assertRaises(
-            Exception, CachableModel, model, "non_existing_file", CacheState.READ
+            Exception, CachableModel, model, "non_existing_file", CacheState.REPLAY
         )
 
-        # Exception when trying to construct CachableModel with CacheState.READ and invalid cache file
+        # Exception when trying to construct CachableModel with CacheState.REPLAY and invalid cache file
         with TemporaryDirectory() as tmp_dir_path:
             broken_cache_file_path = Path(tmp_dir_path).joinpath("broken_cache_file")
             with open(broken_cache_file_path, "w") as broken_cache_file:
                 broken_cache_file.write("invalid content")
             self.assertRaises(
-                Exception, CachableModel, model, broken_cache_file_path, CacheState.READ
+                Exception, CachableModel, model, broken_cache_file_path, CacheState.REPLAY
             )
 
     def test_cache_file_creation(self):
-        """When a model is simulated and CachableModel with 'CacheState.WRITE' is used, the simulation steps are
+        """When a model is simulated and CachableModel with 'CacheState.RECORD' is used, the simulation steps are
         written to a cache. At the end of the simulation process (when 'CachableModel.finish_run()' is called) the
          cache is persisted by writing to the given 'cache_file_path'."""
         with TemporaryDirectory() as tmp_dir_path:
@@ -118,7 +118,7 @@ class TestCachableModel(unittest.TestCase):
             # Simulate
             model_simulate = ModelFibonacci()
             model_simulate = CachableModel(
-                model_simulate, cache_file_path, CacheState.WRITE
+                model_simulate, cache_file_path, CacheState.RECORD
             )
             for i in range(10):
                 model_simulate.step()
@@ -143,7 +143,7 @@ class TestCachableModel(unittest.TestCase):
             # Simulate
             model_simulate = ModelFibonacci()
             model_simulate = CachableModel(
-                model_simulate, cache_file_path, CacheState.WRITE
+                model_simulate, cache_file_path, CacheState.RECORD
             )
             for i in range(step_count):
                 model_simulate.step()
@@ -152,7 +152,7 @@ class TestCachableModel(unittest.TestCase):
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = CachableModel(model_replay, cache_file_path, CacheState.READ)
+            model_replay = CachableModel(model_replay, cache_file_path, CacheState.REPLAY)
             for i in range(step_count):
                 model_replay.step()
                 values_replay.append(model_replay.current)
@@ -170,7 +170,7 @@ class TestCachableModel(unittest.TestCase):
             # Simulate
             model_simulate = ModelFibonacci()
             model_simulate = CachableModel(
-                model_simulate, cache_file_path, CacheState.WRITE
+                model_simulate, cache_file_path, CacheState.RECORD
             )
             for i in range(step_count):
                 model_simulate.step()
@@ -178,7 +178,7 @@ class TestCachableModel(unittest.TestCase):
 
             # Load from cache
             model_replay = ModelFibonacciForReplay()
-            model_replay = CachableModel(model_replay, cache_file_path, CacheState.READ)
+            model_replay = CachableModel(model_replay, cache_file_path, CacheState.REPLAY)
 
             # expect that cache is 1 bigger than step count because it includes the initial state (before any step) too
             assert len(model_replay.cache) == step_count + 1
@@ -192,7 +192,7 @@ class TestCachableModel(unittest.TestCase):
 
             model_simulate = ModelFibonacci()
             model_simulate = CachableModel(
-                model_simulate, cache_file_path, CacheState.WRITE
+                model_simulate, cache_file_path, CacheState.RECORD
             )
 
             assert not model_simulate.run_finished
@@ -213,7 +213,7 @@ class TestCachableModel(unittest.TestCase):
             # Simulate
             model_simulate = ModelFibonacci()
             model_simulate = CachableModel(
-                model_simulate, cache_file_path, CacheState.WRITE
+                model_simulate, cache_file_path, CacheState.RECORD
             )
             model_simulate.run_model()
             final_value_simulation = model_simulate.current
@@ -221,7 +221,7 @@ class TestCachableModel(unittest.TestCase):
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = CachableModel(model_replay, cache_file_path, CacheState.READ)
+            model_replay = CachableModel(model_replay, cache_file_path, CacheState.REPLAY)
             model_replay.run_model()
             final_value_replay = model_simulate.current
             final_step_replay = model_replay.step_count
@@ -243,7 +243,7 @@ class TestCachableModel(unittest.TestCase):
                 model_simulate = CachableModel(
                     model_simulate,
                     cache_file_path,
-                    CacheState.WRITE,
+                    CacheState.RECORD,
                     cache_step_rate=cache_step_rate,
                 )
                 for i in range(step_count):
@@ -253,7 +253,7 @@ class TestCachableModel(unittest.TestCase):
                 # Replay
                 model_replay = ModelFibonacciForReplay()
                 model_replay = CachableModel(
-                    model_replay, cache_file_path, CacheState.READ
+                    model_replay, cache_file_path, CacheState.REPLAY
                 )
 
                 # The replay cache stores only every n-th step. E.g. cache_step_rate is 2: only every second step.
@@ -279,14 +279,14 @@ class TestCachableModel(unittest.TestCase):
 
             # Simulate with regular CachableModel
             model_1 = ModelFibonacci()
-            model_1 = CachableModel(model_1, cache_file_path_1, CacheState.WRITE)
+            model_1 = CachableModel(model_1, cache_file_path_1, CacheState.RECORD)
             model_1.run_model()
             final_value_1 = model_1.current
 
             # Simulate with custom CachableModel that uses stronger compression
             model_2 = ModelFibonacci()
             model_2 = CachableModelCustomFileHandling(
-                model_2, cache_file_path_2, CacheState.WRITE
+                model_2, cache_file_path_2, CacheState.RECORD
             )
             model_2.run_model()
             final_value_2 = model_2.current
@@ -312,14 +312,14 @@ class TestCachableModel(unittest.TestCase):
 
             # Simulate with regular CachableModel
             model_1 = ModelFibonacci()
-            model_1 = CachableModel(model_1, cache_file_path_1, CacheState.WRITE)
+            model_1 = CachableModel(model_1, cache_file_path_1, CacheState.RECORD)
             model_1.run_model()
             final_value_1 = model_1.current
 
             # Simulate with custom CachableModel that caches only parts of the model state that are required for replay
             model_2 = ModelFibonacci()
             model_2 = CachableModelCustomSerialization(
-                model_2, cache_file_path_2, CacheState.WRITE
+                model_2, cache_file_path_2, CacheState.RECORD
             )
             model_2.run_model()
             final_value_2 = model_2.current

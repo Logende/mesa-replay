@@ -8,7 +8,7 @@ class CachableSchellingSimulate(CachableModel):
         super().__init__(
             actual_model,
             cache_file_path="my_cache_file_path.cache",
-            cache_state=CacheState.WRITE,
+            cache_state=CacheState.RECORD,
         )
 
 
@@ -18,5 +18,5 @@ class CachableSchellingReplay(CachableModel):
         super().__init__(
             actual_model,
             cache_file_path="my_cache_file_path.cache",
-            cache_state=CacheState.READ,
+            cache_state=CacheState.REPLAY,
         )

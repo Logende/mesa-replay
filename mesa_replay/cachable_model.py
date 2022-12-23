@@ -16,12 +16,12 @@ from mesa import Model
 
 
 class CacheState(Enum):
-    """When using 'WRITE', with every simulation step the actual simulation will be performed and the model state
+    """When using 'RECORD', with every simulation step the actual simulation will be performed and the model state
     written to the cache (also called simulation mode).
-    When using 'READ', with every step the model state will be read from the cache (also called replay mode)."""
+    When using 'REPLAY', with every step the model state will be read from the cache (also called replay mode)."""
 
-    WRITE = (1,)
-    READ = 2
+    RECORD = (1,)
+    REPLAY = 2
 
 
 def _write_cache_file(cache_file_path: Path, cache_data: list[Any]) -> None:
@@ -70,12 +70,12 @@ class CachableModel:
         self.step_count: int = 0
         self.run_finished = False
 
-        if cache_state is CacheState.READ:
+        if cache_state is CacheState.REPLAY:
             self._read_cache_file()
             # init the model at same state as cached model
             self._step_read_from_cache()
 
-        elif cache_state is CacheState.WRITE:
+        elif cache_state is CacheState.RECORD:
             # store initial state of model in cache
             self._step_write_to_cache()
 
@@ -138,7 +138,7 @@ class CachableModel:
             return
 
         # model run finished -> write to cache if in writing state
-        if self._cache_state is CacheState.WRITE:
+        if self._cache_state is CacheState.RECORD:
             self._write_cache_file()
 
         self.run_finished = True
@@ -147,13 +147,13 @@ class CachableModel:
         """A single step."""
         self.step_count = self.step_count + 1
 
-        if self._cache_state is CacheState.WRITE:
+        if self._cache_state is CacheState.RECORD:
             self.model.step()
             # Cache only every n-th step
             if self.step_count % self._cache_step_rate == 0:
                 self._step_write_to_cache()
 
-        elif self._cache_state is CacheState.READ:
+        elif self._cache_state is CacheState.REPLAY:
             self._step_read_from_cache()
 
             # after reading the last step: stop simulation
@@ -165,12 +165,12 @@ class CachableModel:
             self.finish_run()
 
     def _step_write_to_cache(self) -> None:
-        """Is performed for every step, when 'cache_state' is 'WRITE'. Serializes the current state of the model and
+        """Is performed for every step, when 'cache_state' is 'RECORD'. Serializes the current state of the model and
         adds it to the cache (which is a list that contains the state for each performed step)."""
         self.cache.append(self._serialize_state())
 
     def _step_read_from_cache(self) -> None:
-        """Is performed for every step, when 'cache_state' is 'READ'. Reads the next state from the cache, deserializes
+        """Is performed for every step, when 'cache_state' is 'REPLAY'. Reads the next state from the cache, deserializes
         it and then updates the model state to this new state."""
         serialized_state = self.cache[self.step_count]
         self._deserialize_state(serialized_state)

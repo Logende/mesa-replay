@@ -47,7 +47,7 @@ class TestCachableModel(unittest.TestCase):
             # Simulate
             model_simulate = ModelFibonacci()
             model_simulate = StreamingCachableModel(
-                model_simulate, cache_file_path, CacheState.WRITE
+                model_simulate, cache_file_path, CacheState.RECORD
             )
             model_simulate.step()
             model_simulate.finish_run()
@@ -56,7 +56,7 @@ class TestCachableModel(unittest.TestCase):
             # Replay
             model_replay = ModelFibonacciForReplay()
             model_replay = StreamingCachableModel(
-                model_replay, cache_file_path, CacheState.READ
+                model_replay, cache_file_path, CacheState.REPLAY
             )
 
             # manually read from stream: 1. retrieve chunk length
@@ -83,7 +83,7 @@ class TestCachableModel(unittest.TestCase):
             # Simulate
             model_simulate = ModelFibonacci()
             model_simulate = StreamingCachableModel(
-                model_simulate, cache_file_path, CacheState.WRITE
+                model_simulate, cache_file_path, CacheState.RECORD
             )
             model_simulate.run_model()
             value_simulate = model_simulate.current
@@ -91,7 +91,7 @@ class TestCachableModel(unittest.TestCase):
             # Replay
             model_replay = ModelFibonacciForReplay()
             model_replay = StreamingCachableModel(
-                model_replay, cache_file_path, CacheState.READ
+                model_replay, cache_file_path, CacheState.REPLAY
             )
             model_replay.run_model()
             value_replay = model_replay.current

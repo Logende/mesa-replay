@@ -40,7 +40,7 @@ class StreamingCachableModel(CachableModel):
         cache_step_rate: int = 1,
     ):
 
-        if cache_state is CacheState.WRITE:
+        if cache_state is CacheState.RECORD:
             if cache_file_path.exists():
                 print(
                     "CachableModelLarge: cache file (path='"
@@ -51,7 +51,7 @@ class StreamingCachableModel(CachableModel):
                 os.remove(cache_file_path)
             self.cache_file_stream = io.open(cache_file_path, "wb")
 
-        elif cache_state is CacheState.READ:
+        elif cache_state is CacheState.REPLAY:
             self.cache_file_stream = io.open(cache_file_path, "rb")
 
         # needs to be called when the file stream is already open
@@ -65,14 +65,14 @@ class StreamingCachableModel(CachableModel):
         self.cache_file_stream.close()
 
     def _step_write_to_cache(self) -> None:
-        """Is performed for every step, when 'cache_state' is 'WRITE'. Serializes the current state of the model and
+        """Is performed for every step, when 'cache_state' is 'RECORD'. Serializes the current state of the model and
         writes it to the cache file stream."""
         serialized_state: bytes = self._serialize_state()
         _stream_write_next_chunk_size(self.cache_file_stream, len(serialized_state))
         self.cache_file_stream.write(serialized_state)
 
     def _step_read_from_cache(self) -> None:
-        """Is performed for every step, when 'cache_state' is 'READ'. Reads the next state from the cache file stream,
+        """Is performed for every step, when 'cache_state' is 'REPLAY'. Reads the next state from the cache file stream,
         deserializes it and then updates the model state to this new state."""
         chunk_length = _stream_read_next_chunk_size(self.cache_file_stream)
         if chunk_length == 0:
