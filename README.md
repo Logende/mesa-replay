@@ -31,7 +31,11 @@ For more information and an example of how to use Mesa, see <https://mesa.readth
 
 ## What is Mesa-Replay?
 
-Depending on the complexity of a simulation model, the algorithms being used and the hardware, it can take many hours or even days for a simulation to run. Once a simulation run is finished and the application is closed, typically some chosen generated data is persisted, but everything else is gone. Unlike with a video, there is no way of going back within the simulation or replaying a simulation. You wrote an impressive COVID simulation that is quite accurate but takes over 10 hours to run? It is inconvenient for you to demonstrate or play your simulation live because it takes so much time?
+Depending on the complexity of a simulation model, the algorithms being used and the hardware, it can take many hours or even days for a simulation to run. 
+Once a simulation run is finished and the application is closed, typically some chosen generated data is persisted, but everything else is gone. 
+Unlike with a video, there is no way of going back within the simulation or replaying a simulation. 
+You wrote an impressive COVID simulation that is quite accurate but takes over 10 hours to run? 
+It is inconvenient for you to demonstrate or play your simulation live because it takes so much time?
 
 Mesa-Replay addresses and solves those issues by enabling you to **cache your entire simulation run, persist the cached "run" on your file system and replay it later**.
 
