@@ -45,11 +45,11 @@ class CachableModel:
     """Class that takes a model and writes its steps to a cache file or reads them from a cache file."""
 
     def __init__(
-            self,
-            model: Model,
-            cache_file_path: str | Path,
-            cache_state: CacheState,
-            cache_step_rate: int = 1,
+        self,
+        model: Model,
+        cache_file_path: str | Path,
+        cache_state: CacheState,
+        cache_step_rate: int = 1,
     ) -> None:
         """Create a new caching wrapper around an existing mesa model instance.
 
@@ -179,7 +179,7 @@ class CachableModel:
         """Act as proxy: forward all attributes (including function calls) from actual model."""
         return self.model.__getattribute__(item)
 
-    #def __setattr__(self, key, value):
+    # def __setattr__(self, key, value):
     #    """Act as proxy: forward all attribute writes (excluding CachableModel specific attributes) to actual model."""
     #    if key in (
     #            "model",

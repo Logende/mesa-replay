@@ -95,4 +95,3 @@ class StreamingCachableModel(CachableModel):
         """Overwrites the '_read_cache_file' function of the CachableModel class. As the file content is read from
         the stream during each step, this function does not have to do anything in advance."""
         return
-
