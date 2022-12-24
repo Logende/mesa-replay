@@ -1,6 +1,7 @@
+"""This file was copied from the Mesa Schelling example in the mesa examples repository."""
+
 import mesa
 
-# This file was copied from https://github.com/projectmesa/mesa-examples/tree/main/examples/Schelling
 from examples.replay_schelling.model import Schelling
 
 

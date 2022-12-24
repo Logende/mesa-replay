@@ -1,7 +1,7 @@
-from mesa_replay.cachable_model import Model, CacheState
+from mesa_replay.cacheable_model import Model, CacheState
 
-from mesa_replay.streaming_cachable_model import (
-    StreamingCachableModel,
+from mesa_replay.streaming_cacheable_model import (
+    StreamingCacheableModel,
     _stream_read_next_chunk_size,
 )
 
@@ -36,9 +36,9 @@ class ModelFibonacciForReplay(ModelFibonacci):
         raise Exception("This function is not supposed to be called during replay.")
 
 
-class TestCachableModel(unittest.TestCase):
+class TestCacheableModel(unittest.TestCase):
     def test_streaming_chunk_handling(self):
-        """This test verifies that the streaming functionality of 'StreamingCachableModel' works properly:
+        """This test verifies that the streaming functionality of 'StreamingCacheableModel' works properly:
         for every step, first the size of the chunk (state) to persist is written to the stream. Next the actual
         chunk is written."""
         with TemporaryDirectory() as tmp_dir_path:
@@ -46,7 +46,7 @@ class TestCachableModel(unittest.TestCase):
 
             # Simulate
             model_simulate = ModelFibonacci()
-            model_simulate = StreamingCachableModel(
+            model_simulate = StreamingCacheableModel(
                 model_simulate, cache_file_path, CacheState.RECORD
             )
             model_simulate.step()
@@ -55,7 +55,7 @@ class TestCachableModel(unittest.TestCase):
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = StreamingCachableModel(
+            model_replay = StreamingCacheableModel(
                 model_replay, cache_file_path, CacheState.REPLAY
             )
 
@@ -74,7 +74,7 @@ class TestCachableModel(unittest.TestCase):
             assert value_replay == value_simulate
 
     def test_streaming_results(self):
-        """This test uses StreamingCachableModel. It runs a complete simulation, that is persisted using streaming.
+        """This test uses StreamingCacheableModel. It runs a complete simulation, that is persisted using streaming.
         Next it replays the simulation using the cache and streaming. Finally, it asserts that the final value of the
         replay is the same as the final value of the simulation."""
         with TemporaryDirectory() as tmp_dir_path:
@@ -82,7 +82,7 @@ class TestCachableModel(unittest.TestCase):
 
             # Simulate
             model_simulate = ModelFibonacci()
-            model_simulate = StreamingCachableModel(
+            model_simulate = StreamingCacheableModel(
                 model_simulate, cache_file_path, CacheState.RECORD
             )
             model_simulate.run_model()
@@ -90,7 +90,7 @@ class TestCachableModel(unittest.TestCase):
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = StreamingCachableModel(
+            model_replay = StreamingCacheableModel(
                 model_replay, cache_file_path, CacheState.REPLAY
             )
             model_replay.run_model()

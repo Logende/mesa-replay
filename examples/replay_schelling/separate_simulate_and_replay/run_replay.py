@@ -6,7 +6,7 @@ from examples.replay_schelling.server import (
     happy_chart,
     model_params,
 )
-from cachablemodel import CachableSchellingReplay
+from cacheablemodel import CachableSchellingReplay
 
 
 server = mesa.visualization.ModularServer(

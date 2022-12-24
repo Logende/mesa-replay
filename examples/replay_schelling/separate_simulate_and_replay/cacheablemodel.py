@@ -1,8 +1,8 @@
 from examples.replay_schelling.model import Schelling
-from mesa_replay import CachableModel, CacheState
+from mesa_replay import CacheableModel, CacheState
 
 
-class CachableSchellingSimulate(CachableModel):
+class CacheableSchellingSimulate(CacheableModel):
     def __init__(self, width=20, height=20, density=0.8, minority_pc=0.2, homophily=3):
         actual_model = Schelling(width, height, density, minority_pc, homophily)
         super().__init__(
@@ -12,7 +12,7 @@ class CachableSchellingSimulate(CachableModel):
         )
 
 
-class CachableSchellingReplay(CachableModel):
+class CacheableSchellingReplay(CacheableModel):
     def __init__(self, width=20, height=20, density=0.8, minority_pc=0.2, homophily=3):
         actual_model = Schelling(width, height, density, minority_pc, homophily)
         super().__init__(

@@ -6,12 +6,12 @@ from examples.replay_schelling.server import (
     happy_chart,
     model_params,
 )
-from cachablemodel import CachableSchellingSimulate
+from cacheablemodel import CacheableSchellingSimulate
 
 
 server = mesa.visualization.ModularServer(
-    # Note that Schelling was replaced by CachableSchellingSimulate here
-    CachableSchellingSimulate,
+    # Note that Schelling was replaced by CacheableSchellingSimulate here
+    CacheableSchellingSimulate,
     [canvas_element, get_happy_agents, happy_chart],
     "Schelling",
     model_params,

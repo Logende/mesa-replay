@@ -1,13 +1,13 @@
 """
 Mesa-Replay
-Core Objects: CachableModel, CachableModelStreaming
+Core Objects: CacheableModel, CacheableModelStreaming, CacheState
 """
 import datetime
 
-from mesa_replay.cachable_model import CachableModel, CacheState
-from mesa_replay.streaming_cachable_model import StreamingCachableModel
+from mesa_replay.cacheable_model import CacheableModel, CacheState
+from mesa_replay.streaming_cacheable_model import StreamingCacheableModel
 
-__all__ = ["CachableModel", "StreamingCachableModel", "CacheState"]
+__all__ = ["CacheableModel", "StreamingCacheableModel", "CacheState"]
 
 __title__ = "mesa-replay"
 __version__ = "0.1.0"

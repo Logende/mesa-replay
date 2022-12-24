@@ -2,10 +2,10 @@ import dill
 
 
 def strip_off_unneeded_data_from_model_dict(original_model_dict: dict):
-    """If not overwritten by custom serialization, CachableModel persists the complete 'model.__dict__' for every step.
+    """If not overwritten by custom serialization, CacheableModel persists the complete 'model.__dict__' for every step.
     Not everything that the model dict contains needs to be cached. As most model properties are model-specific, the
     decision of what to store and what not to store is up to the person developing the model, which they can do by
-    overwriting the 'CachableModel._serialize_state' function. Some generic optimization, however, can be made:
+    overwriting the 'CacheableModel._serialize_state' function. Some generic optimization, however, can be made:
     Many mesa models use the mesa scheduling and/or the mesa datacollector functionality. The scheduler does not need to
     be cached, therefore, we can remove it. The datacollector stores not only data from the current, but also from the
     previous steps. This we can change, by deleting all data from the previous steps. That is exactly what this function

@@ -1,7 +1,7 @@
 """
 A decorator that wraps the model class of mesa and extends it by caching functionality.
 
-Core Objects: CachableModel
+Core Objects: CacheableModel
 """
 from pathlib import Path
 from enum import Enum
@@ -26,7 +26,7 @@ class CacheState(Enum):
 
 def _write_cache_file(cache_file_path: Path, cache_data: list[Any]) -> None:
     """Default function for writing the given cache data to the cache file.
-    Used by CachableModel if not replaced by a custom write function.
+    Used by CacheableModel if not replaced by a custom write function.
     Uses dill to dump the data into the file.
     Uses gzip for compression."""
     with gzip.open(cache_file_path, "wb") as file:
@@ -35,13 +35,13 @@ def _write_cache_file(cache_file_path: Path, cache_data: list[Any]) -> None:
 
 def _read_cache_file(cache_file_path: Path) -> list[Any]:
     """Default function for reading the cache data from the cache file.
-    Used by CachableModel if not replaced by a custom read function.
+    Used by CacheableModel if not replaced by a custom read function.
     Expects that gzip and dill have been used to write the file."""
     with gzip.open(cache_file_path, "rb") as file:
         return dill.load(file)
 
 
-class CachableModel:
+class CacheableModel:
     """Class that takes a model and writes its steps to a cache file or reads them from a cache file."""
 
     def __init__(
@@ -87,7 +87,7 @@ class CachableModel:
         Note that for large model states, it might make sense to add compression during the serialization.
         That way the size of the cache in memory can be reduced. Additionally, while, by default, the resulting output
         cache file is compressed too (see '_write_cache_file'), this is not the case, when using other file handling
-        behavior, such as writing to a buffered file stream during every step (see 'StreamingCachableModel'). For such
+        behavior, such as writing to a buffered file stream during every step (see 'StreamingCacheableModel'). For such
         use-cases, a way to reduce the size of the resulting output cache file is to compress the individual steps. That
         way, for example, reading the cache from the file stream step by step remains possible, without having to
         load the complete cache into memory. This is not possible, when the complete output file is compressed.
@@ -110,7 +110,7 @@ class CachableModel:
         Needs to remain compatible with '_read_cache_file'.
         """
         _write_cache_file(self.cache_file_path, self.cache)
-        print("Wrote CachableModel cache file to " + str(self.cache_file_path))
+        print("Wrote CacheableModel cache file to " + str(self.cache_file_path))
 
     def _read_cache_file(self) -> None:
         """Read the cache from 'cache_file_path' into memory.
@@ -123,7 +123,7 @@ class CachableModel:
         """Run the model until the end condition is reached."""
         # Right now if someone has a custom run_model function, they need to overwrite this function too.
         # That is because if they would use their own 'run_model()' function, they would access also their own 'step()'
-        # function and not the outer level CachableModel 'step()' function.
+        # function and not the outer level CacheableModel 'step()' function.
         while self.model.running:
             self.step()
 
@@ -133,7 +133,7 @@ class CachableModel:
         called to force writing the cache without the need of the model reaching the end condition."""
         if self.run_finished:
             print(
-                "CachableModel: tried to finish run that was already finished. Doing nothing."
+                "CacheableModel: tried to finish run that was already finished. Doing nothing."
             )
             return
 

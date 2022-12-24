@@ -1,8 +1,8 @@
 from examples.replay_schelling.model import Schelling
-from mesa_replay import CachableModel, CacheState
+from mesa_replay import CacheableModel, CacheState
 
 
-class CachableSchelling(CachableModel):
+class CacheableSchelling(CacheableModel):
     def __init__(
         self,
         width=20,

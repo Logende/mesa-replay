@@ -1,8 +1,8 @@
 """
-A decorator that makes CachableModel use IO buffered streaming to write to the cache file/read from the cache file step
+A decorator that makes CacheableModel use IO buffered streaming to write to the cache file/read from the cache file step
 by step, instead of keeping the complete cache in memory.
 
-Core Objects: StreamingCachableModel
+Core Objects: StreamingCacheableModel
 """
 
 import os
@@ -10,11 +10,11 @@ import io
 from pathlib import Path
 from typing import IO
 
-from mesa_replay.cachable_model import Model, CachableModel, CacheState
+from mesa_replay.cacheable_model import Model, CacheableModel, CacheState
 
 
 def _stream_write_next_chunk_size(stream: IO, size: int):
-    """The StreamingCachableModel functionality writes each step into the cache file stream as a separate 'chunk'.
+    """The StreamingCacheableModel functionality writes each step into the cache file stream as a separate 'chunk'.
     To enable the stream reading functionality to know how big the next data chunk of the stream is, before every chunk
     the chunk size is written into the stream. This function writes the chunk size into the given stream."""
     chunk_length_bytes = size.to_bytes(length=8, byteorder="little", signed=False)
@@ -22,14 +22,14 @@ def _stream_write_next_chunk_size(stream: IO, size: int):
 
 
 def _stream_read_next_chunk_size(stream):
-    """The StreamingCachableModel functionality writes each step into the cache file stream as a separate 'chunk'.
+    """The StreamingCacheableModel functionality writes each step into the cache file stream as a separate 'chunk'.
     To enable the stream reading functionality to know how big the next data chunk of the stream is, before every chunk
     the chunk size is written into the stream. This function reads the next chunk size from the stream."""
     return int.from_bytes(stream.read(8), byteorder="little", signed=False)
 
 
-class StreamingCachableModel(CachableModel):
-    """Decorator for CachableModel that uses buffered streams for reading and writing the cache, instead
+class StreamingCacheableModel(CacheableModel):
+    """Decorator for CacheableModel that uses buffered streams for reading and writing the cache, instead
     of keeping the complete cache in memory. Useful when the cache is large."""
 
     def __init__(
@@ -43,7 +43,7 @@ class StreamingCachableModel(CachableModel):
         if cache_state is CacheState.RECORD:
             if cache_file_path.exists():
                 print(
-                    "CachableModelLarge: cache file (path='"
+                    "CacheableModelLarge: cache file (path='"
                     + str(cache_file_path)
                     + "') already exists. "
                     "Deleting it."
@@ -76,14 +76,14 @@ class StreamingCachableModel(CachableModel):
         deserializes it and then updates the model state to this new state."""
         chunk_length = _stream_read_next_chunk_size(self.cache_file_stream)
         if chunk_length == 0:
-            print("CachableModelLarge: reached end of cache file stream.")
+            print("CacheableModelLarge: reached end of cache file stream.")
             self.model.running = False
         else:
             serialized_state = self.cache_file_stream.read(chunk_length)
             self._deserialize_state(serialized_state)
 
     def _write_cache_file(self) -> None:
-        """Overwrites the '_write_cache_file' function of the CachableModel class. As the file content is written
+        """Overwrites the '_write_cache_file' function of the CacheableModel class. As the file content is written
         to the stream during each step, this function does not have to write the complete cache file.
         It only adds an EOF hint to the cache file stream. After that, the stream can be closed and the cache file is
         completed.
@@ -92,6 +92,6 @@ class StreamingCachableModel(CachableModel):
         _stream_write_next_chunk_size(self.cache_file_stream, 0)
 
     def _read_cache_file(self) -> None:
-        """Overwrites the '_read_cache_file' function of the CachableModel class. As the file content is read from
+        """Overwrites the '_read_cache_file' function of the CacheableModel class. As the file content is read from
         the stream during each step, this function does not have to do anything in advance."""
         return
