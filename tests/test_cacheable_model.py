@@ -131,7 +131,7 @@ class TestCacheableModel(unittest.TestCase):
             # After finished run: cache file does exist
             assert cache_file_path.is_file()
 
-            # assert that file created by default CacheableModel can be opened using gzip and then dill
+            # Assert that file created by default CacheableModel can be opened using gzip and then dill
             with gzip.open(cache_file_path, "rb") as file:
                 dill.load(file)
 
@@ -188,7 +188,7 @@ class TestCacheableModel(unittest.TestCase):
                 model_replay, cache_file_path, CacheState.REPLAY
             )
 
-            # expect that cache is 1 bigger than step count because it includes the initial state (before any step) too
+            # Expect that cache is 1 bigger than step count because it includes the initial state (before any step) too
             assert len(model_replay.cache) == step_count + 1
 
     def test_automatic_detection_of_run_finish(self):
@@ -238,6 +238,44 @@ class TestCacheableModel(unittest.TestCase):
 
             assert final_step_replay == final_step_simulation
             assert final_value_replay == final_value_simulation
+
+    def test_run_model_until_condition_met(self):
+        """Tests the 'run_model_until_condition_met' function: defines custom conditions and calls the function,
+        checking whether the simulation/replay really stops when the given condition is met.
+        """
+        with TemporaryDirectory() as tmp_dir_path:
+            cache_file_path = Path(tmp_dir_path).joinpath("cache_file")
+
+            # Simulate
+            model_simulate = ModelFibonacci()
+            model_simulate = CacheableModel(
+                model_simulate, cache_file_path, CacheState.RECORD
+            )
+
+            def condition_current_step_is_10(_: Model, step_count: int) -> bool:
+                return step_count == 10
+            # Run model until step_count 10 is reached
+            model_simulate.run_model_until_condition_met(condition_current_step_is_10)
+
+            # Assert that model stopped when condition was reached
+            assert model_simulate.step_count == 10
+
+            # Finish simulation run and store cache on file system
+            model_simulate.finish_run()
+
+            # Replay
+            model_replay = ModelFibonacciForReplay()
+            model_replay = CacheableModel(
+                model_replay, cache_file_path, CacheState.REPLAY
+            )
+
+            def condition_current_value_is_five(model: Model, _: int) -> bool:
+                return model.current == 5
+            # Run model until fibonacci current value 5 is reached
+            model_replay.run_model_until_condition_met(condition_current_value_is_five)
+
+            # Fibonacci sequence: 1 (step 0), 1, 2, 3, 5 (step 4), 8, ... -> expect step 4
+            assert model_replay.step_count == 4
 
     def test_cache_step_rate(self):
         """This test verifies that when using 'cache_step_rate' > 1 the cache will store
@@ -306,8 +344,8 @@ class TestCacheableModel(unittest.TestCase):
 
             # Cache file 2 should be smaller than cache file 1 due to stronger compression
             assert (
-                cache_file_path_2.stat().st_size * 1.1
-                < cache_file_path_1.stat().st_size
+                    cache_file_path_2.stat().st_size * 1.1
+                    < cache_file_path_1.stat().st_size
             )
 
     def test_custom_serialization(self):
@@ -339,5 +377,5 @@ class TestCacheableModel(unittest.TestCase):
 
             # Cache file 2 should be a lot smaller than cache file 1 due to storing fewer data
             assert (
-                cache_file_path_2.stat().st_size * 35 < cache_file_path_1.stat().st_size
+                    cache_file_path_2.stat().st_size * 35 < cache_file_path_1.stat().st_size
             )
