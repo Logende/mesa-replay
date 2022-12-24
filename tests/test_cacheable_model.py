@@ -102,7 +102,11 @@ class TestCacheableModel(unittest.TestCase):
             with open(broken_cache_file_path, "w") as broken_cache_file:
                 broken_cache_file.write("invalid content")
             self.assertRaises(
-                Exception, CacheableModel, model, broken_cache_file_path, CacheState.REPLAY
+                Exception,
+                CacheableModel,
+                model,
+                broken_cache_file_path,
+                CacheState.REPLAY,
             )
 
     def test_cache_file_creation(self):
@@ -152,7 +156,9 @@ class TestCacheableModel(unittest.TestCase):
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = CacheableModel(model_replay, cache_file_path, CacheState.REPLAY)
+            model_replay = CacheableModel(
+                model_replay, cache_file_path, CacheState.REPLAY
+            )
             for i in range(step_count):
                 model_replay.step()
                 values_replay.append(model_replay.current)
@@ -178,7 +184,9 @@ class TestCacheableModel(unittest.TestCase):
 
             # Load from cache
             model_replay = ModelFibonacciForReplay()
-            model_replay = CacheableModel(model_replay, cache_file_path, CacheState.REPLAY)
+            model_replay = CacheableModel(
+                model_replay, cache_file_path, CacheState.REPLAY
+            )
 
             # expect that cache is 1 bigger than step count because it includes the initial state (before any step) too
             assert len(model_replay.cache) == step_count + 1
@@ -221,7 +229,9 @@ class TestCacheableModel(unittest.TestCase):
 
             # Replay
             model_replay = ModelFibonacciForReplay()
-            model_replay = CacheableModel(model_replay, cache_file_path, CacheState.REPLAY)
+            model_replay = CacheableModel(
+                model_replay, cache_file_path, CacheState.REPLAY
+            )
             model_replay.run_model()
             final_value_replay = model_simulate.current
             final_step_replay = model_replay.step_count

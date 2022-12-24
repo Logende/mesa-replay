@@ -2,6 +2,7 @@
 
 import mesa
 
+
 class SchellingAgent(mesa.Agent):
     """
     Schelling segregation agent

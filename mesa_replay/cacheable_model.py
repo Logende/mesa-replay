@@ -180,7 +180,7 @@ class CacheableModel:
         return self.model.__getattribute__(item)
 
     def __setattr__(self, key, value):
-        if key is "running":
+        if key == "running":
             self.model.__setattr__(key, value)
         else:
             super().__setattr__(key, value)
