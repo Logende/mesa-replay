@@ -1,5 +1,5 @@
 """
-A decorator that makes CacheableModel use IO buffered streaming to write to the cache file/read from the cache file step
+An extension of CacheableModel that uses IO buffered streaming to write to the cache file/read from the cache file step
 by step, instead of keeping the complete cache in memory.
 
 Core Objects: StreamingCacheableModel
@@ -29,7 +29,7 @@ def _stream_read_next_chunk_size(stream):
 
 
 class StreamingCacheableModel(CacheableModel):
-    """Decorator for CacheableModel that uses buffered streams for reading and writing the cache, instead
+    """Extension of CacheableModel that uses buffered streams for reading and writing the cache, instead
     of keeping the complete cache in memory. Useful when the cache is large."""
 
     def __init__(

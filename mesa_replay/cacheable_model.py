@@ -1,5 +1,5 @@
 """
-A decorator that wraps the model class of mesa and extends it by caching functionality.
+Wraps the model class of mesa and extends it by caching functionality.
 
 Core Objects: CacheableModel
 """
