@@ -254,6 +254,7 @@ class TestCacheableModel(unittest.TestCase):
 
             def condition_current_step_is_10(_: Model, step_count: int) -> bool:
                 return step_count == 10
+
             # Run model until step_count 10 is reached
             model_simulate.run_model_until_condition_met(condition_current_step_is_10)
 
@@ -271,6 +272,7 @@ class TestCacheableModel(unittest.TestCase):
 
             def condition_current_value_is_five(model: Model, _: int) -> bool:
                 return model.current == 5
+
             # Run model until fibonacci current value 5 is reached
             model_replay.run_model_until_condition_met(condition_current_value_is_five)
 
@@ -344,8 +346,8 @@ class TestCacheableModel(unittest.TestCase):
 
             # Cache file 2 should be smaller than cache file 1 due to stronger compression
             assert (
-                    cache_file_path_2.stat().st_size * 1.1
-                    < cache_file_path_1.stat().st_size
+                cache_file_path_2.stat().st_size * 1.1
+                < cache_file_path_1.stat().st_size
             )
 
     def test_custom_serialization(self):
@@ -377,5 +379,5 @@ class TestCacheableModel(unittest.TestCase):
 
             # Cache file 2 should be a lot smaller than cache file 1 due to storing fewer data
             assert (
-                    cache_file_path_2.stat().st_size * 35 < cache_file_path_1.stat().st_size
+                cache_file_path_2.stat().st_size * 35 < cache_file_path_1.stat().st_size
             )

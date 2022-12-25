@@ -185,15 +185,21 @@ class CacheableModel:
         else:
             super().__setattr__(key, value)
 
-    def run_model_until_condition_met(self, condition_function: Callable[[Model, int], bool]):
+    def run_model_until_condition_met(
+        self, condition_function: Callable[[Model, int], bool]
+    ):
         """Run the model until the given condition is fulfilled or the simulation end is reached.
         Can be used to skip the steps of a replay until a given checkpoint is reached or to simulate until a certain
         condition of interest is met."""
         if not self.model.running:
             raise ValueError("Model 'running' attribute needs to be 'True'.")
 
-        while not condition_function(self.model, self.step_count) and self.model.running:
+        while (
+            not condition_function(self.model, self.step_count) and self.model.running
+        ):
             self.step()
 
         if not self.model.running:
-            print("Reached end of simulation. Model finished running without the condition becoming fulfilled.")
+            print(
+                "Reached end of simulation. Model finished running without the condition becoming fulfilled."
+            )
