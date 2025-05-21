@@ -49,9 +49,10 @@ Mesa-Replay is developed with the goal of being **simple**, **generic** and **ac
 
 # Installation
 
-To locally install Mesa-Replay as a pip module, use
-> pip install -e .
-
+To locally install Mesa-Replay as a pip module, install in ['editable' mode](https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs):
+```bash
+pip install -e .
+```
 
 # How to Use
 
