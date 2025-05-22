@@ -49,12 +49,17 @@ Mesa-Replay is developed with the goal of being **simple**, **generic** and **ac
 
 # Installation
 
-To locally install Mesa-Replay as a pip module, use
-> pip -e install .
-
+To locally install Mesa-Replay as a pip module, install in ['editable' mode](https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs):
+```bash
+pip install -e .
+```
 
 # How to Use
 
 For usage examples, see [here](https://github.com/Logende/mesa-replay/tree/main/examples).
 
-The [test files](https://github.com/Logende/mesa-replay/tree/main/tests) (they have extensive descriptions) also illustrate the functionality of Mesa-Replay.
+The [test files](https://github.com/Logende/mesa-replay/tree/main/tests) (they have extensive descriptions) also illustrate the functionality of Mesa-Replay. To test them, run:
+
+```bash
+python -m unittest tests/test_*
+```
